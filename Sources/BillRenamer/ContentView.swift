@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var model: AppModel
+    @State private var showHelp = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -28,12 +29,14 @@ struct ContentView: View {
                 model.chooseFolder()
             }
             .disabled(model.isRunning)
+            .help("Pick the folder containing your billing PDFs. Only the top level is scanned, not subfolders.")
 
             Button("Scan & Rename") {
                 model.scanAndRename()
             }
             .keyboardShortcut(.defaultAction)
             .disabled(model.folderURL == nil || model.isRunning || model.pendingCount == 0)
+            .help("Sends each pending PDF to the Gemini API, then renames it to \"YYYY-MM-DD Issuer Number.pdf\". Files marked already renamed or excluded are skipped.")
 
             if model.folderURL != nil {
                 Button {
@@ -62,14 +65,54 @@ struct ContentView: View {
             Spacer()
 
             Button {
+                showHelp.toggle()
+            } label: {
+                Image(systemName: "questionmark.circle")
+            }
+            .buttonStyle(.borderless)
+            .help("How BillRenamer works")
+            .popover(isPresented: $showHelp, arrowEdge: .bottom) {
+                helpPopover
+            }
+
+            Button {
                 model.showSettings = true
             } label: {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(.borderless)
-            .help("Settings")
+            .help("Settings: Gemini API key and model")
         }
         .padding(12)
+    }
+
+    private var helpPopover: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("How BillRenamer works")
+                .font(.headline)
+            Text("""
+            1. Choose a folder — its top-level PDFs are listed immediately. \
+            Files whose name already matches "YYYY-MM-DD Issuer Number.pdf" \
+            are marked gray and skipped.
+
+            2. Hover over a pending file and click ➖ to exclude it from the \
+            scan (➕ brings it back). Right-click a gray file and pick \
+            "Scan Anyway" to re-analyze it despite its name.
+
+            3. Scan & Rename uploads each pending PDF to Google's Gemini API, \
+            which reads the bill and returns the issuer, issue date, and \
+            document number. The file is then renamed in place — nothing is \
+            copied, moved, or deleted.
+
+            Unrecognized files and errors are left untouched; scanning again \
+            retries them. Each scanned file costs one small API request \
+            against your Gemini quota.
+            """)
+            .font(.callout)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(width: 380)
     }
 
     private var fileList: some View {
@@ -148,7 +191,20 @@ private struct FileRow: View {
                 }
                 .buttonStyle(.borderless)
                 .disabled(model.isRunning)
-                .help(isExcluded ? "Include in scan" : "Remove from scan")
+                .help(isExcluded
+                    ? "Include this file in the next scan"
+                    : "Remove this file from the scan — it won't be sent to the API or renamed")
+            }
+
+            if item.status == .alreadyRenamed && hovering {
+                Button {
+                    model.scanAnyway(item)
+                } label: {
+                    Image(systemName: "arrow.counterclockwise.circle")
+                }
+                .buttonStyle(.borderless)
+                .disabled(model.isRunning)
+                .help("Scan anyway — re-analyze this file even though its name already matches the renamed pattern (useful if it was named wrongly)")
             }
         }
         .padding(.vertical, 2)
@@ -157,6 +213,12 @@ private struct FileRow: View {
             if isToggleable {
                 Button(isExcluded ? "Include in Scan" : "Remove from Scan") {
                     model.toggleExcluded(item)
+                }
+                .disabled(model.isRunning)
+            }
+            if item.status == .alreadyRenamed {
+                Button("Scan Anyway") {
+                    model.scanAnyway(item)
                 }
                 .disabled(model.isRunning)
             }

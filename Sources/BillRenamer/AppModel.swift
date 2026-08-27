@@ -70,6 +70,10 @@ final class AppModel: ObservableObject {
 
     @AppStorage("geminiModel") var modelID = "gemini-3.1-flash-lite"
 
+    /// Files the user chose to scan even though their name already matches
+    /// the renamed pattern. Survives the refresh that runs before a scan.
+    private var forcedURLs: Set<URL> = []
+
     // YYYY-MM-DD <issuer...> <number>[ (n)].pdf
     private static let alreadyRenamedRegex = try! NSRegularExpression(
         pattern: #"^\d{4}-\d{2}-\d{2} .+ \S+(\s\(\d+\))?\.pdf$"#,
@@ -118,10 +122,11 @@ final class AppModel: ObservableObject {
             .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
             .map { url in
                 let status: FileStatus
-                if Self.matches(Self.alreadyRenamedRegex, url.lastPathComponent) {
-                    status = .alreadyRenamed
-                } else if previouslyExcluded.contains(url) {
+                if previouslyExcluded.contains(url) {
                     status = .excluded
+                } else if Self.matches(Self.alreadyRenamedRegex, url.lastPathComponent),
+                          !forcedURLs.contains(url) {
+                    status = .alreadyRenamed
                 } else {
                     status = .pending
                 }
@@ -134,10 +139,30 @@ final class AppModel: ObservableObject {
               let index = files.firstIndex(where: { $0.id == item.id })
         else { return }
         switch files[index].status {
-        case .pending: files[index].status = .excluded
-        case .excluded: files[index].status = .pending
-        default: break // finished / already-renamed rows aren't toggleable
+        case .pending:
+            // A force-queued already-renamed file goes back to its natural
+            // state instead of "excluded".
+            if forcedURLs.contains(files[index].url) {
+                forcedURLs.remove(files[index].url)
+                files[index].status = .alreadyRenamed
+            } else {
+                files[index].status = .excluded
+            }
+        case .excluded:
+            files[index].status = .pending
+        default:
+            break // finished rows aren't toggleable
         }
+    }
+
+    /// Queues an already-renamed file for scanning anyway.
+    func scanAnyway(_ item: FileItem) {
+        guard !isRunning,
+              let index = files.firstIndex(where: { $0.id == item.id }),
+              files[index].status == .alreadyRenamed
+        else { return }
+        forcedURLs.insert(files[index].url)
+        files[index].status = .pending
     }
 
     func scanAndRename() {
@@ -181,6 +206,7 @@ final class AppModel: ObservableObject {
             guard let i = files.firstIndex(where: { $0.id == id }) else { continue }
             let url = files[i].url
             let name = url.lastPathComponent
+            forcedURLs.remove(url)
             setStatus(id, .processing)
 
             let pdfData: Data
