@@ -74,8 +74,13 @@ final class AppModel: ObservableObject {
     /// the renamed pattern. Survives the refresh that runs before a scan.
     private var forcedURLs: Set<URL> = []
 
-    // YYYY-MM-DD <issuer...> <number>[ (n)].pdf
+    // YYYYMMDD <issuer...> <number>[ (n)].pdf
     private static let alreadyRenamedRegex = try! NSRegularExpression(
+        pattern: #"^\d{8} .+ \S+(\s\(\d+\))?\.pdf$"#,
+        options: [.caseInsensitive]
+    )
+    // The previous naming scheme (YYYY-MM-DD …) — migrated locally, no API call.
+    private static let oldFormatRegex = try! NSRegularExpression(
         pattern: #"^\d{4}-\d{2}-\d{2} .+ \S+(\s\(\d+\))?\.pdf$"#,
         options: [.caseInsensitive]
     )
@@ -209,6 +214,26 @@ final class AppModel: ObservableObject {
             forcedURLs.remove(url)
             setStatus(id, .processing)
 
+            // Old naming scheme (YYYY-MM-DD …): migrate locally, no API call.
+            if Self.matches(Self.oldFormatRegex, name) {
+                let compactDate = String(name.prefix(10)).replacingOccurrences(of: "-", with: "")
+                let base = compactDate + String(name.dropFirst(10).dropLast(4))
+                let newName = Self.uniqueName(base: base, in: folder, currentName: name)
+                do {
+                    let newURL = folder.appendingPathComponent(newName)
+                    try fm.moveItem(at: url, to: newURL)
+                    renamedCount += 1
+                    if let i = files.firstIndex(where: { $0.id == id }) {
+                        files[i].url = newURL
+                    }
+                    setStatus(id, .renamed(newName))
+                } catch {
+                    errorCount += 1
+                    setStatus(id, .error("Rename failed: \(error.localizedDescription)"))
+                }
+                continue
+            }
+
             let pdfData: Data
             do {
                 pdfData = try Data(contentsOf: url)
@@ -240,7 +265,8 @@ final class AppModel: ObservableObject {
                 continue
             }
 
-            let newName = Self.uniqueName(base: "\(date) \(issuer) \(number)", in: folder, currentName: name)
+            let compactDate = date.replacingOccurrences(of: "-", with: "")
+            let newName = Self.uniqueName(base: "\(compactDate) \(issuer) \(number)", in: folder, currentName: name)
             if newName == name {
                 alreadyDoneCount += 1
                 setStatus(id, .alreadyRenamed)
@@ -290,7 +316,7 @@ final class AppModel: ObservableObject {
         "sa", "s.a", "s.a.", "ae", "a.e", "a.e.", "ltd", "ltd.", "llc",
         "inc", "inc.", "plc", "gmbh", "ag", "bv", "b.v.", "nv", "n.v.",
         "epe", "e.p.e.", "oe", "o.e.", "ike", "spa", "s.p.a.", "srl",
-        "s.r.l.", "co", "co.", "corp", "corp.",
+        "s.r.l.", "co", "co.", "corp", "corp.", "tm", "aade",
     ]
 
     private static func stripLegalSuffixes(_ name: String) -> String {

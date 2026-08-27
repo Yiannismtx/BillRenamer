@@ -1,7 +1,9 @@
 # BillRenamer
 
 Native macOS app (SwiftUI, macOS 13+) that renames billing PDFs to
-`YYYY-MM-DD IssuerName DocumentNumber.pdf` using the Gemini API.
+`YYYYMMDD IssuerName DocumentNumber.pdf` (e.g. `20250527 Vodafone 123456.pdf`)
+using the Gemini API. Files named in the older `YYYY-MM-DD …` style are
+migrated to the new format locally, without an API call.
 
 ## Build
 
@@ -20,7 +22,7 @@ ad-hoc code-signed). Requires Xcode.
 2. **Choose Folder…**, then **Scan & Rename**.
 
 Only top-level `.pdf` files are considered. Files already matching the
-`YYYY-MM-DD … ….pdf` pattern are skipped without an API call. Everything else
+`YYYYMMDD … ….pdf` pattern are skipped without an API call. Everything else
 is sent to Gemini for identification; unrecognized documents and API errors
 are logged and skipped, never renamed. Name collisions get a ` (2)`, ` (3)`
 suffix. Files are renamed in place.

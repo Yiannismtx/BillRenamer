@@ -41,10 +41,14 @@ struct GeminiClient {
                                      original is in another script). Drop legal
                                      suffixes and corporate forms such as
                                      "SA", "S.A.", "A.E.", "AE", "Ltd", "LLC",
-                                     "Inc", "PLC", "GmbH", "EPE", "OE", and drop
-                                     generic words like "Group", "Hellas",
-                                     "Telecommunications" unless they are part of
-                                     the everyday brand name.
+                                     "Inc", "PLC", "GmbH", "EPE", "OE", drop
+                                     administrative/agency labels and department
+                                     abbreviations such as "TM", "AADE", "DOY",
+                                     and drop generic words like "Group",
+                                     "Hellas", "Telecommunications" unless they
+                                     are part of the everyday brand name. The
+                                     result must be ONLY the clean brand name in
+                                     Latin characters, never Greek script.
                                      e.g. "Vodafone SA" -> "Vodafone",
                                      "DEI A.E." -> "DEI", "EYDAP SA" -> "EYDAP"
       "document_date": string,    // the document's issue date, format YYYY-MM-DD
