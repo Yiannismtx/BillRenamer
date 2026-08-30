@@ -1,3 +1,4 @@
 .build/
 BillRenamer.app/
 .DS_Store
+releases/old_updates/
