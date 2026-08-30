@@ -41,7 +41,7 @@ enum FileStatus: Equatable {
         case .alreadyRenamed: return "Already renamed"
         case .processing: return "Analyzing…"
         case .renamed(let newName): return "→ \(newName)"
-        case .notRecognized: return "Not recognized as a billing document"
+        case .notRecognized: return "Not recognized as a supported document type"
         case .error(let message): return message
         }
     }
@@ -74,14 +74,13 @@ final class AppModel: ObservableObject {
     /// the renamed pattern. Survives the refresh that runs before a scan.
     private var forcedURLs: Set<URL> = []
 
-    // YYYYMMDD <issuer...> <number>[ (n)].pdf
+    static let documentTypes: Set<String> = ["INV", "PKL", "CNT", "PAY", "CRE", "TAX", "LET", "IMP"]
+
+    // YYYY-MM-DD <issuer...> <TYPE> <number>[ (n)].pdf
+    // Older schemes (no type code) don't match, so those files get rescanned
+    // and upgraded to the current format via the API.
     private static let alreadyRenamedRegex = try! NSRegularExpression(
-        pattern: #"^\d{8} .+ \S+(\s\(\d+\))?\.pdf$"#,
-        options: [.caseInsensitive]
-    )
-    // The previous naming scheme (YYYY-MM-DD …) — migrated locally, no API call.
-    private static let oldFormatRegex = try! NSRegularExpression(
-        pattern: #"^\d{4}-\d{2}-\d{2} .+ \S+(\s\(\d+\))?\.pdf$"#,
+        pattern: #"^\d{4}-\d{2}-\d{2} .+ (INV|PKL|CNT|PAY|CRE|TAX|LET|IMP) \S+(\s\(\d+\))?\.pdf$"#,
         options: [.caseInsensitive]
     )
     private static let dateRegex = try! NSRegularExpression(pattern: #"^\d{4}-\d{2}-\d{2}$"#)
@@ -214,26 +213,6 @@ final class AppModel: ObservableObject {
             forcedURLs.remove(url)
             setStatus(id, .processing)
 
-            // Old naming scheme (YYYY-MM-DD …): migrate locally, no API call.
-            if Self.matches(Self.oldFormatRegex, name) {
-                let compactDate = String(name.prefix(10)).replacingOccurrences(of: "-", with: "")
-                let base = compactDate + String(name.dropFirst(10).dropLast(4))
-                let newName = Self.uniqueName(base: base, in: folder, currentName: name)
-                do {
-                    let newURL = folder.appendingPathComponent(newName)
-                    try fm.moveItem(at: url, to: newURL)
-                    renamedCount += 1
-                    if let i = files.firstIndex(where: { $0.id == id }) {
-                        files[i].url = newURL
-                    }
-                    setStatus(id, .renamed(newName))
-                } catch {
-                    errorCount += 1
-                    setStatus(id, .error("Rename failed: \(error.localizedDescription)"))
-                }
-                continue
-            }
-
             let pdfData: Data
             do {
                 pdfData = try Data(contentsOf: url)
@@ -255,9 +234,11 @@ final class AppModel: ObservableObject {
             let issuer = Self.stripLegalSuffixes(Self.sanitize(extraction.issuer_name))
             let number = Self.sanitize(extraction.document_number)
             let date = extraction.document_date.trimmingCharacters(in: .whitespaces)
+            let type = extraction.document_type.trimmingCharacters(in: .whitespaces).uppercased()
 
-            guard extraction.is_billing_document,
+            guard extraction.is_recognized_document,
                   !issuer.isEmpty, !number.isEmpty,
+                  Self.documentTypes.contains(type),
                   Self.matches(Self.dateRegex, date)
             else {
                 notRecognizedCount += 1
@@ -275,8 +256,7 @@ final class AppModel: ObservableObject {
                 continue
             }
 
-            let compactDate = date.replacingOccurrences(of: "-", with: "")
-            let newName = Self.uniqueName(base: "\(compactDate) \(issuer) \(number)", in: folder, currentName: name)
+            let newName = Self.uniqueName(base: "\(date) \(issuer) \(type) \(number)", in: folder, currentName: name)
             if newName == name {
                 alreadyDoneCount += 1
                 setStatus(id, .alreadyRenamed)

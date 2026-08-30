@@ -1,9 +1,10 @@
 import Foundation
 
 struct BillingExtraction: Decodable {
-    let is_billing_document: Bool
+    let is_recognized_document: Bool
     let issuer_name: String
     let document_date: String
+    let document_type: String
     let document_number: String
 }
 
@@ -29,12 +30,14 @@ struct GeminiClient {
     let model: String
 
     private static let extractionPrompt = """
-    You are analyzing a single billing document (invoice, utility bill, or
-    statement) that may be in any language. Respond with ONLY a JSON object,
-    no markdown, no commentary, matching exactly this schema:
+    You are analyzing a single business/accounting document (invoice, utility
+    bill, statement, contract, payment confirmation, credit note, tax
+    document, packing list, or business letter) that may be in any language,
+    often Greek. Respond with ONLY a JSON object, no markdown, no commentary,
+    matching exactly this schema:
 
     {
-      "is_billing_document": boolean,
+      "is_recognized_document": boolean,
       "issuer_name": string,       // the company/organization that issued this bill,
                                      as its short common BRAND name only, in
                                      Latin/ASCII characters (transliterate if the
@@ -62,15 +65,33 @@ struct GeminiClient {
                                      if the date you extracted has an earlier year,
                                      you have misread the date format — re-read it
                                      day-first.
+      "document_type": string,    // EXACTLY one of these codes:
+                                     "INV" = service invoices, invoice/delivery
+                                             notes, expense invoices
+                                             (ΤΙΜΟΛΟΓΙΑ ΠΑΡΟΧΗΣ ΥΠΗΡΕΣΙΩΝ,
+                                             ΤΙΜΟΛΟΓΙΑ ΔΕΛΤΙΑ ΑΠΟΣΤΟΛΗΣ, ΔΑΠΑΝΕΣ),
+                                             including utility bills
+                                     "PKL" = packing list
+                                     "CNT" = contracts, agreements
+                                             (ΣΥΜΒΑΣΕΙΣ, ΣΥΜΦΩΝΗΤΙΚΑ)
+                                     "PAY" = payments, payment confirmations,
+                                             receipts of payment (ΠΛΗΡΩΜΕΣ)
+                                     "CRE" = credit notes from creditors/suppliers
+                                             (ΠΙΣΤΩΤΙΚΑ)
+                                     "TAX" = tax documents (ΦΟΡΟΙ)
+                                     "LET" = letters, mainly to banks
+                                             (ΕΠΙΣΤΟΛΕΣ ΠΡΟΣ ΤΡΑΠΕΖΕΣ)
+                                     "IMP" = supplier invoices for imports
+                                             (ΤΙΜΟΛΟΓΙΑ ΠΡΟΜΗΘΕΥΤΩΝ, ΕΙΣΑΓΩΓΕΣ)
       "document_number": string   // the primary account/statement/invoice number
                                      printed on the document (prefer an account or
                                      statement number over a payment/transaction
                                      reference number if both are present)
     }
 
-    If this is not a billing document, or you cannot confidently determine all
-    three fields, set "is_billing_document" to false and leave the other fields
-    as empty strings.
+    If this is not one of the document types above, or you cannot confidently
+    determine all four fields, set "is_recognized_document" to false and leave
+    the other fields as empty strings.
     """
 
     private var endpoint: URL {

@@ -35,6 +35,7 @@ struct SettingsSheet: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
+                    keyInstructions
                     SecureField("Paste your Gemini API key", text: $apiKey)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 380)
@@ -114,6 +115,31 @@ struct SettingsSheet: View {
         } message: {
             Text("The key is removed from your Keychain. You'll need to paste a key again before the next scan.")
         }
+    }
+
+    private var keyInstructions: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("BillRenamer needs a free Google Gemini API key to read your documents. Getting one takes about two minutes:")
+                .font(.callout)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("1. Open Google AI Studio (button below) and sign in with any Google account.")
+                Text("2. Click \"Create API key\" and, if asked, let it create a new project.")
+                Text("3. Copy the key (it starts with \"AIza…\") and paste it below, then click Save.")
+                Text("4. Click Test Key to confirm it works.")
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            Button("Open Google AI Studio…") {
+                NSWorkspace.shared.open(URL(string: "https://aistudio.google.com/apikey")!)
+            }
+            Text("The free tier is enough for normal use. If Test Key reports error 403, the key's Google project doesn't have the Gemini API enabled yet — the error message includes the link to enable it.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(10)
+        .frame(width: 380, alignment: .leading)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func save() {

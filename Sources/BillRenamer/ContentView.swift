@@ -36,7 +36,7 @@ struct ContentView: View {
             }
             .keyboardShortcut(.defaultAction)
             .disabled(model.folderURL == nil || model.isRunning || model.pendingCount == 0)
-            .help("Sends each pending PDF to the Gemini API, then renames it to \"YYYYMMDD Issuer Number.pdf\". Files marked already renamed or excluded are skipped.")
+            .help("Sends each pending PDF to the Gemini API, then renames it to \"YYYY-MM-DD Issuer TYPE Number.pdf\" (e.g. \"2026-08-30 Vodafone INV 55484.pdf\"). Files marked already renamed or excluded are skipped.")
 
             if model.folderURL != nil {
                 Button {
@@ -92,10 +92,13 @@ struct ContentView: View {
                 .font(.headline)
             Text("""
             1. Choose a folder — its top-level PDFs are listed immediately. \
-            Files whose name already matches "YYYYMMDD Issuer Number.pdf" \
-            are marked gray and skipped. Files named in the older \
-            "YYYY-MM-DD …" style are renamed to the new format locally, \
-            without an API call.
+            Files whose name already matches \
+            "YYYY-MM-DD Issuer TYPE Number.pdf" (e.g. "2026-08-30 Vodafone \
+            INV 55484.pdf") are marked gray and skipped. TYPE is one of: \
+            INV invoices/bills · PKL packing list · CNT contracts · \
+            PAY payments · CRE credit notes · TAX taxes · LET letters · \
+            IMP import invoices. Files named in older formats are rescanned \
+            and upgraded.
 
             2. Hover over a pending file and click ➖ to exclude it from the \
             scan (➕ brings it back). Right-click a gray file and pick \
