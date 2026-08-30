@@ -78,7 +78,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var lastScanRenames: [RenameRecord] = []
     @Published var undoAlertMessage: String?
 
-    @AppStorage("geminiModel") var modelID = "gemini-3.1-flash-lite"
+    @AppStorage("claudeModel") var modelID = "claude-sonnet-5"
     /// Dates the model reads before this year are treated as a misread
     /// (day/month swap) rather than renamed. Adjust in Settings if you're
     /// scanning documents older than this.
@@ -226,7 +226,7 @@ final class AppModel: ObservableObject {
         alreadyDoneCount = files.filter { $0.status == .alreadyRenamed }.count
         lastScanRenames = []
 
-        let client = GeminiClient(apiKey: apiKey, model: modelID)
+        let client = ClaudeClient(apiKey: apiKey, model: modelID)
         Task {
             await self.processPendingFiles(in: folder, client: client)
             self.isRunning = false
@@ -244,7 +244,7 @@ final class AppModel: ObservableObject {
         regex.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)) != nil
     }
 
-    private func processPendingFiles(in folder: URL, client: GeminiClient) async {
+    private func processPendingFiles(in folder: URL, client: ClaudeClient) async {
         let fm = FileManager.default
         let pendingIDs = files.filter { $0.status == .pending }.map { $0.id }
 

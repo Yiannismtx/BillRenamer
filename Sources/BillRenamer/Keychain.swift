@@ -3,7 +3,7 @@ import Security
 
 enum Keychain {
     private static let service = "com.yiannis.billrenamer"
-    private static let account = "gemini-api-key"
+    private static let account = "anthropic-api-key"
 
     static func loadAPIKey() -> String? {
         let query: [String: Any] = [

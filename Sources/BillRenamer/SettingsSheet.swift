@@ -16,7 +16,7 @@ struct SettingsSheet: View {
                 .font(.headline)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Gemini API Key")
+                Text("Anthropic API Key")
                     .font(.callout)
 
                 if model.hasAPIKey {
@@ -36,7 +36,7 @@ struct SettingsSheet: View {
                         .foregroundStyle(.secondary)
                 } else {
                     keyInstructions
-                    SecureField("Paste your Gemini API key", text: $apiKey)
+                    SecureField("Paste your Anthropic API key", text: $apiKey)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 380)
                 }
@@ -48,7 +48,7 @@ struct SettingsSheet: View {
                 TextField("Model ID", text: model.$modelID)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 380)
-                Text("Change this if Google renames or retires the model.")
+                Text("Change this if Anthropic retires the model or you want a different one (e.g. \"claude-haiku-4-5\" for lower cost, \"claude-opus-5\" for higher accuracy).")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -97,7 +97,7 @@ struct SettingsSheet: View {
                     .textSelection(.enabled)
             }
 
-            Text("Note: every scanned PDF is uploaded to Google's Gemini API for analysis.")
+            Text("Note: every scanned PDF is uploaded to Anthropic's Claude API for analysis.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -131,20 +131,20 @@ struct SettingsSheet: View {
 
     private var keyInstructions: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("BillRenamer needs a free Google Gemini API key to read your documents. Getting one takes about two minutes:")
+            Text("BillRenamer needs an Anthropic API key to read your documents. Getting one takes about two minutes:")
                 .font(.callout)
             VStack(alignment: .leading, spacing: 4) {
-                Text("1. Open Google AI Studio (button below) and sign in with any Google account.")
-                Text("2. Click \"Create API key\" and, if asked, let it create a new project.")
-                Text("3. Copy the key (it starts with \"AIza…\") and paste it below, then click Save.")
+                Text("1. Open the Anthropic Console (button below) and sign in or create an account.")
+                Text("2. Add billing under Settings → Billing — a credit card or prepaid credit. Usage is pay-as-you-go, typically a fraction of a cent per document.")
+                Text("3. Create a key, copy it (it starts with \"sk-ant-…\"), and paste it below, then click Save.")
                 Text("4. Click Test Key to confirm it works.")
             }
             .font(.callout)
             .foregroundStyle(.secondary)
-            Button("Open Google AI Studio…") {
-                NSWorkspace.shared.open(URL(string: "https://aistudio.google.com/apikey")!)
+            Button("Open Anthropic Console…") {
+                NSWorkspace.shared.open(URL(string: "https://console.anthropic.com/settings/keys")!)
             }
-            Text("The free tier is enough for normal use. If Test Key reports error 403, the key's Google project doesn't have the Gemini API enabled yet — the error message includes the link to enable it.")
+            Text("This is separate from any claude.ai chat subscription — API usage is billed independently, per document scanned.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -187,7 +187,7 @@ struct SettingsSheet: View {
         }
         isTesting = true
         statusMessage = ""
-        let client = GeminiClient(apiKey: key, model: model.modelID)
+        let client = ClaudeClient(apiKey: key, model: model.modelID)
         Task {
             do {
                 try await client.testKey()

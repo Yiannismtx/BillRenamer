@@ -62,7 +62,7 @@ struct ContentView: View {
             }
             .keyboardShortcut(.defaultAction)
             .disabled(model.folderURL == nil || model.isRunning || model.pendingCount == 0)
-            .help("Sends each pending PDF to the Gemini API, then renames it to \"YYYYMMDD_Issuer_TYPE_Number.pdf\" (e.g. \"20260830_Vodafone_INV_55484.pdf\"). Files marked already renamed or excluded are skipped.")
+            .help("Sends each pending PDF to Anthropic's Claude API, then renames it to \"YYYYMMDD_Issuer_TYPE_Number.pdf\" (e.g. \"20260830_Vodafone_INV_55484.pdf\"). Files marked already renamed or excluded are skipped.")
 
             if model.folderURL != nil {
                 Button {
@@ -118,7 +118,7 @@ struct ContentView: View {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(.borderless)
-            .help("Settings: Gemini API key and model")
+            .help("Settings: Anthropic API key and model")
         }
         .padding(12)
     }
@@ -141,14 +141,14 @@ struct ContentView: View {
             scan (➕ brings it back). Right-click a gray file and pick \
             "Scan Anyway" to re-analyze it despite its name.
 
-            3. Scan & Rename uploads each pending PDF to Google's Gemini API, \
-            which reads the bill and returns the issuer, issue date, and \
-            document number. The file is then renamed in place — nothing is \
-            copied, moved, or deleted.
+            3. Scan & Rename uploads each pending PDF to Anthropic's Claude \
+            API, which reads the bill and returns the issuer, issue date, \
+            and document number. The file is then renamed in place — \
+            nothing is copied, moved, or deleted.
 
             Unrecognized files and errors are left untouched; scanning again \
-            retries them. Each scanned file costs one small API request \
-            against your Gemini quota.
+            retries them. Each scanned file costs a small amount against \
+            your Anthropic API usage.
             """)
             .font(.callout)
             .fixedSize(horizontal: false, vertical: true)
@@ -165,7 +165,7 @@ struct ContentView: View {
         .listStyle(.inset(alternatesRowBackgrounds: true))
         .overlay {
             if model.folderURL == nil {
-                Text("Choose a folder of billing PDFs to see its files here.\nEach unrecognized PDF is sent to Google's Gemini API for identification.")
+                Text("Choose a folder of billing PDFs to see its files here.\nEach unrecognized PDF is sent to Anthropic's Claude API for identification.")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
                     .padding()
