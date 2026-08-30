@@ -33,6 +33,18 @@ is sent to Gemini for identification; unrecognized documents and API errors
 are logged and skipped, never renamed. Name collisions get a ` (2)`, ` (3)`
 suffix. Files are renamed in place.
 
+## Releasing an update
+
+Two ways, both end with every installed copy auto-updating:
+
+- **From GitHub (any collaborator):** add a What's New entry for the new
+  version at the top of `ReleaseNotes.entries` in
+  `Sources/BillRenamer/WhatsNewSheet.swift`, push it, then go to
+  **Actions → Release → Run workflow** and enter the version (e.g. `1.8.0`).
+  Requires the `SPARKLE_PRIVATE_KEY` repository secret to be set.
+- **Locally (Mac with the Sparkle key in its Keychain):** add the What's New
+  entry, then run `./release.sh 1.8.0`.
+
 ## Sharing the app
 
 The API key lives in the local user's macOS Keychain, not in the app bundle.
