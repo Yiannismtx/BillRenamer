@@ -36,7 +36,7 @@ struct ContentView: View {
             }
             .keyboardShortcut(.defaultAction)
             .disabled(model.folderURL == nil || model.isRunning || model.pendingCount == 0)
-            .help("Sends each pending PDF to the Gemini API, then renames it to \"YYYYMMDD_TYPE_Issuer_Number.pdf\" (e.g. \"20260830_INV_Vodafone_55484.pdf\"). Files marked already renamed or excluded are skipped.")
+            .help("Sends each pending PDF to the Gemini API, then renames it to \"YYYYMMDD_Issuer_TYPE_Number.pdf\" (e.g. \"20260830_Vodafone_INV_55484.pdf\"). Files marked already renamed or excluded are skipped.")
 
             if model.folderURL != nil {
                 Button {
@@ -93,7 +93,7 @@ struct ContentView: View {
             Text("""
             1. Choose a folder — its top-level PDFs are listed immediately. \
             Files whose name already matches \
-            "YYYYMMDD_TYPE_Issuer_Number.pdf" (e.g. "20260830_INV_Vodafone_\
+            "YYYYMMDD_Issuer_TYPE_Number.pdf" (e.g. "20260830_Vodafone_INV_\
             55484.pdf") are marked gray and skipped. TYPE is one of: \
             INV invoices/bills · PKL packing list · CNT contracts · \
             PAY payments · CRE credit notes · TAX taxes · LET letters · \

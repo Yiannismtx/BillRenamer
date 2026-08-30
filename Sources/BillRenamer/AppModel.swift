@@ -76,16 +76,21 @@ final class AppModel: ObservableObject {
 
     static let documentTypes: Set<String> = ["INV", "PKL", "CNT", "PAY", "CRE", "TAX", "LET", "IMP"]
 
-    // YYYYMMDD_<TYPE>_<issuer...>_<number>[ (n)].pdf
-    // Older schemes without a type code don't match, so those files get
-    // rescanned and upgraded to the current format via the API.
+    // YYYYMMDD_<issuer...>_<TYPE>_<number>[ (n)].pdf
+    // Older schemes don't match, so those files get migrated or rescanned.
     private static let alreadyRenamedRegex = try! NSRegularExpression(
-        pattern: #"^\d{8}_(INV|PKL|CNT|PAY|CRE|TAX|LET|IMP)_.+_[^_]+(\s\(\d+\))?\.pdf$"#,
+        pattern: #"^\d{8}_.+_(INV|PKL|CNT|PAY|CRE|TAX|LET|IMP)_[^_]+(\s\(\d+\))?\.pdf$"#,
         options: [.caseInsensitive]
     )
-    // The 1.4.0 scheme ("YYYY-MM-DD Issuer TYPE Number.pdf") has all four
-    // fields, so it's rearranged locally — no API call.
-    private static let prevFormatRegex = try! NSRegularExpression(
+    // Earlier schemes that already carry all four fields are rearranged
+    // locally — no API call:
+    // 1.5.0: "YYYYMMDD_TYPE_Issuer_Number.pdf"
+    private static let v150FormatRegex = try! NSRegularExpression(
+        pattern: #"^(\d{8})_(INV|PKL|CNT|PAY|CRE|TAX|LET|IMP)_(.+)_([^_\s]+)(\s\(\d+\))?\.pdf$"#,
+        options: [.caseInsensitive]
+    )
+    // 1.4.0: "YYYY-MM-DD Issuer TYPE Number.pdf"
+    private static let v140FormatRegex = try! NSRegularExpression(
         pattern: #"^(\d{4})-(\d{2})-(\d{2}) (.+) (INV|PKL|CNT|PAY|CRE|TAX|LET|IMP) (\S+?)(\s\(\d+\))?\.pdf$"#,
         options: [.caseInsensitive]
     )
@@ -281,7 +286,7 @@ final class AppModel: ObservableObject {
             }
 
             let compactDate = date.replacingOccurrences(of: "-", with: "")
-            let newName = Self.uniqueName(base: "\(compactDate)_\(type)_\(issuer)_\(number)", in: folder, currentName: name)
+            let newName = Self.uniqueName(base: "\(compactDate)_\(issuer)_\(type)_\(number)", in: folder, currentName: name)
             if newName == name {
                 alreadyDoneCount += 1
                 setStatus(id, .alreadyRenamed)
@@ -314,20 +319,26 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// Rebuilds a 1.4.0-format name ("YYYY-MM-DD Issuer TYPE Number.pdf") in
-    /// the current format, or nil if the name isn't in that scheme.
+    /// Rebuilds a name from an earlier scheme in the current format
+    /// (YYYYMMDD_Issuer_TYPE_Number), or nil if it isn't in one.
     private static func migratedName(from name: String) -> String? {
         let range = NSRange(name.startIndex..., in: name)
-        guard let match = prevFormatRegex.firstMatch(in: name, range: range) else { return nil }
-        func group(_ i: Int) -> String {
+        func group(_ match: NSTextCheckingResult, _ i: Int) -> String {
             guard let r = Range(match.range(at: i), in: name) else { return "" }
             return String(name[r])
         }
-        let date = group(1) + group(2) + group(3)
-        let issuer = group(4).replacingOccurrences(of: "_", with: " ")
-        let type = group(5).uppercased()
-        let number = group(6).replacingOccurrences(of: "_", with: " ")
-        return "\(date)_\(type)_\(issuer)_\(number)"
+        // 1.5.0: YYYYMMDD_TYPE_Issuer_Number → swap type and issuer.
+        if let m = v150FormatRegex.firstMatch(in: name, range: range) {
+            return "\(group(m, 1))_\(group(m, 3))_\(group(m, 2).uppercased())_\(group(m, 4))"
+        }
+        // 1.4.0: YYYY-MM-DD Issuer TYPE Number.
+        if let m = v140FormatRegex.firstMatch(in: name, range: range) {
+            let date = group(m, 1) + group(m, 2) + group(m, 3)
+            let issuer = group(m, 4).replacingOccurrences(of: "_", with: " ")
+            let number = group(m, 6).replacingOccurrences(of: "_", with: " ")
+            return "\(date)_\(issuer)_\(group(m, 5).uppercased())_\(number)"
+        }
+        return nil
     }
 
     private static func sanitize(_ s: String) -> String {
