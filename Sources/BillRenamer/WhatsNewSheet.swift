@@ -4,6 +4,9 @@ import SwiftUI
 /// first — release.sh refuses to publish a version that has no entry here.
 enum ReleaseNotes {
     static let entries: [(version: String, notes: [String])] = [
+        ("2.0.1", [
+            "BillRenamer now has its own app icon.",
+        ]),
         ("2.0.0", [
             "Switched from Google's Gemini API to Anthropic's Claude API for document analysis.",
             "You'll need to link a new API key in Settings — your previous Gemini key no longer applies. Get one at console.anthropic.com.",

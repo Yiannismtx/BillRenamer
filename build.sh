@@ -11,6 +11,7 @@ SPARKLE_FW=".build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp .build/release/BillRenamer "$APP/Contents/MacOS/BillRenamer"
 cp -R "$SPARKLE_FW" "$APP/Contents/Frameworks/"
 

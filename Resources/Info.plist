@@ -6,6 +6,8 @@
 	<string>BillRenamer</string>
 	<key>CFBundleExecutable</key>
 	<string>BillRenamer</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.yiannis.billrenamer</string>
 	<key>CFBundleName</key>
