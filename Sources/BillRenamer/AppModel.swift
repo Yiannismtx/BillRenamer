@@ -76,11 +76,17 @@ final class AppModel: ObservableObject {
 
     static let documentTypes: Set<String> = ["INV", "PKL", "CNT", "PAY", "CRE", "TAX", "LET", "IMP"]
 
-    // YYYY-MM-DD <issuer...> <TYPE> <number>[ (n)].pdf
-    // Older schemes (no type code) don't match, so those files get rescanned
-    // and upgraded to the current format via the API.
+    // YYYYMMDD_<TYPE>_<issuer...>_<number>[ (n)].pdf
+    // Older schemes without a type code don't match, so those files get
+    // rescanned and upgraded to the current format via the API.
     private static let alreadyRenamedRegex = try! NSRegularExpression(
-        pattern: #"^\d{4}-\d{2}-\d{2} .+ (INV|PKL|CNT|PAY|CRE|TAX|LET|IMP) \S+(\s\(\d+\))?\.pdf$"#,
+        pattern: #"^\d{8}_(INV|PKL|CNT|PAY|CRE|TAX|LET|IMP)_.+_[^_]+(\s\(\d+\))?\.pdf$"#,
+        options: [.caseInsensitive]
+    )
+    // The 1.4.0 scheme ("YYYY-MM-DD Issuer TYPE Number.pdf") has all four
+    // fields, so it's rearranged locally — no API call.
+    private static let prevFormatRegex = try! NSRegularExpression(
+        pattern: #"^(\d{4})-(\d{2})-(\d{2}) (.+) (INV|PKL|CNT|PAY|CRE|TAX|LET|IMP) (\S+?)(\s\(\d+\))?\.pdf$"#,
         options: [.caseInsensitive]
     )
     private static let dateRegex = try! NSRegularExpression(pattern: #"^\d{4}-\d{2}-\d{2}$"#)
@@ -213,6 +219,24 @@ final class AppModel: ObservableObject {
             forcedURLs.remove(url)
             setStatus(id, .processing)
 
+            // Previous scheme: rearrange the existing fields locally.
+            if let migrated = Self.migratedName(from: name) {
+                let newName = Self.uniqueName(base: migrated, in: folder, currentName: name)
+                do {
+                    let newURL = folder.appendingPathComponent(newName)
+                    try fm.moveItem(at: url, to: newURL)
+                    renamedCount += 1
+                    if let i = files.firstIndex(where: { $0.id == id }) {
+                        files[i].url = newURL
+                    }
+                    setStatus(id, .renamed(newName))
+                } catch {
+                    errorCount += 1
+                    setStatus(id, .error("Rename failed: \(error.localizedDescription)"))
+                }
+                continue
+            }
+
             let pdfData: Data
             do {
                 pdfData = try Data(contentsOf: url)
@@ -256,7 +280,8 @@ final class AppModel: ObservableObject {
                 continue
             }
 
-            let newName = Self.uniqueName(base: "\(date) \(issuer) \(type) \(number)", in: folder, currentName: name)
+            let compactDate = date.replacingOccurrences(of: "-", with: "")
+            let newName = Self.uniqueName(base: "\(compactDate)_\(type)_\(issuer)_\(number)", in: folder, currentName: name)
             if newName == name {
                 alreadyDoneCount += 1
                 setStatus(id, .alreadyRenamed)
@@ -289,8 +314,26 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Rebuilds a 1.4.0-format name ("YYYY-MM-DD Issuer TYPE Number.pdf") in
+    /// the current format, or nil if the name isn't in that scheme.
+    private static func migratedName(from name: String) -> String? {
+        let range = NSRange(name.startIndex..., in: name)
+        guard let match = prevFormatRegex.firstMatch(in: name, range: range) else { return nil }
+        func group(_ i: Int) -> String {
+            guard let r = Range(match.range(at: i), in: name) else { return "" }
+            return String(name[r])
+        }
+        let date = group(1) + group(2) + group(3)
+        let issuer = group(4).replacingOccurrences(of: "_", with: " ")
+        let type = group(5).uppercased()
+        let number = group(6).replacingOccurrences(of: "_", with: " ")
+        return "\(date)_\(type)_\(issuer)_\(number)"
+    }
+
     private static func sanitize(_ s: String) -> String {
-        let forbidden = CharacterSet(charactersIn: "/\\:*?\"<>|")
+        // Underscore is the field separator in the filename, so it's
+        // forbidden inside field values too.
+        let forbidden = CharacterSet(charactersIn: "/\\:*?\"<>|_")
         let cleaned = s.unicodeScalars
             .map { forbidden.contains($0) ? " " : String($0) }
             .joined()
