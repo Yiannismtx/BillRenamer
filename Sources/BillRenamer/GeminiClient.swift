@@ -53,7 +53,15 @@ struct GeminiClient {
                                      "DEI A.E." -> "DEI", "EYDAP SA" -> "EYDAP"
       "document_date": string,    // the document's issue date, format YYYY-MM-DD
                                      (use the issue/statement date, NOT the payment
-                                     due date)
+                                     due date). IMPORTANT: dates printed on these
+                                     documents are in European DAY-FIRST order —
+                                     "05/03/2025" means 5 March 2025, and in
+                                     "27/05/25" the 25 is the year 2025, never the
+                                     day. A two-digit year YY means 20YY. All of
+                                     these documents were issued in 2024 or later;
+                                     if the date you extracted has an earlier year,
+                                     you have misread the date format — re-read it
+                                     day-first.
       "document_number": string   // the primary account/statement/invoice number
                                      printed on the document (prefer an account or
                                      statement number over a payment/transaction
@@ -92,14 +100,39 @@ struct GeminiClient {
         return text
     }
 
-    private func send(body: [String: Any]) async throws -> String {
+    /// Pulls the human-readable message out of a Google error payload and adds
+    /// a hint for the common "API not enabled on this project" 403.
+    static func errorMessage(status: Int, data: Data) -> String {
+        var message = String(data: data.prefix(300), encoding: .utf8) ?? ""
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let error = json["error"] as? [String: Any],
+           let msg = error["message"] as? String {
+            message = msg.replacingOccurrences(of: "\n", with: " ")
+        }
+        if status == 403, message.lowercased().contains("has not been used") || message.lowercased().contains("disabled") {
+            message += " — Fix: your API key belongs to a Google Cloud project without the Gemini API enabled. Open the URL above in a browser, click Enable, wait ~1 minute, then scan again. (Or create a fresh key at aistudio.google.com/apikey.)"
+        }
+        return message
+    }
+
+    private func sendOnce(body: [String: Any]) async throws -> Data {
         let request = try makeRequest(body: body)
         let (data, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            let snippet = String(data: data.prefix(300), encoding: .utf8) ?? ""
-            throw GeminiError.httpError(http.statusCode, snippet)
+            throw GeminiError.httpError(http.statusCode, Self.errorMessage(status: http.statusCode, data: data))
         }
-        return try responseText(data)
+        return data
+    }
+
+    private func send(body: [String: Any]) async throws -> String {
+        do {
+            return try responseText(try await sendOnce(body: body))
+        } catch GeminiError.httpError(let code, _) where [403, 429, 500, 503].contains(code) {
+            // Transient (rate limit, server error) or just-enabled-API 403:
+            // wait a moment and retry once before giving up.
+            try await Task.sleep(nanoseconds: 3_000_000_000)
+            return try responseText(try await sendOnce(body: body))
+        }
     }
 
     func extractBillingFields(pdfData: Data) async throws -> BillingExtraction {
@@ -137,11 +170,6 @@ struct GeminiClient {
             "contents": [["parts": [["text": "ok"]]]],
             "generationConfig": ["temperature": 0, "maxOutputTokens": 5],
         ]
-        let request = try makeRequest(body: body)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            let snippet = String(data: data.prefix(300), encoding: .utf8) ?? ""
-            throw GeminiError.httpError(http.statusCode, snippet)
-        }
+        _ = try await sendOnce(body: body)
     }
 }

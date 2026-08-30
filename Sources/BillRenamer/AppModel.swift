@@ -265,6 +265,16 @@ final class AppModel: ObservableObject {
                 continue
             }
 
+            // All of this user's bills are from 2024 onward — a year outside
+            // that range means the model misread the (day-first) date, so
+            // flag it instead of renaming wrongly.
+            let currentYear = Calendar.current.component(.year, from: Date())
+            if let year = Int(date.prefix(4)), !(2024...(currentYear + 1)).contains(year) {
+                errorCount += 1
+                setStatus(id, .error("Suspicious date \"\(date)\" (expected year 2024–\(currentYear + 1)) — likely a misread date, not renamed"))
+                continue
+            }
+
             let compactDate = date.replacingOccurrences(of: "-", with: "")
             let newName = Self.uniqueName(base: "\(compactDate) \(issuer) \(number)", in: folder, currentName: name)
             if newName == name {

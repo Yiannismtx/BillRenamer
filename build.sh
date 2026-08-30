@@ -19,6 +19,8 @@ install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/Mac
 
 xattr -cr "$APP"
 codesign --force --sign - "$APP/Contents/Frameworks/Sparkle.framework"
+xattr -cr "$APP"
 codesign --force --sign - "$APP"
+codesign -v "$APP"
 
 echo "Built $APP"
