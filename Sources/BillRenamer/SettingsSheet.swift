@@ -53,6 +53,18 @@ struct SettingsSheet: View {
                     .foregroundStyle(.secondary)
             }
 
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Earliest Expected Document Year")
+                    .font(.callout)
+                Stepper(value: model.$minDocumentYear, in: 1990...Calendar.current.component(.year, from: Date())) {
+                    Text(String(model.minDocumentYear))
+                }
+                .frame(width: 380, alignment: .leading)
+                Text("A document dated earlier than this is treated as a misread date and flagged instead of renamed. Lower it if you're scanning older archives.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             HStack(spacing: 10) {
                 if !model.hasAPIKey {
                     Button("Save") {

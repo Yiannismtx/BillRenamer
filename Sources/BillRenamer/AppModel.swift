@@ -55,6 +55,11 @@ struct FileItem: Identifiable {
     var name: String { url.lastPathComponent }
 }
 
+struct RenameRecord {
+    let from: URL
+    let to: URL
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     @Published var folderURL: URL?
@@ -68,7 +73,16 @@ final class AppModel: ObservableObject {
     @Published var notRecognizedCount = 0
     @Published var errorCount = 0
 
+    /// Renames performed by the most recent scan, in order — lets the user
+    /// revert them as a batch. Replaced (not accumulated) by each new scan.
+    @Published private(set) var lastScanRenames: [RenameRecord] = []
+    @Published var undoAlertMessage: String?
+
     @AppStorage("geminiModel") var modelID = "gemini-3.1-flash-lite"
+    /// Dates the model reads before this year are treated as a misread
+    /// (day/month swap) rather than renamed. Adjust in Settings if you're
+    /// scanning documents older than this.
+    @AppStorage("minDocumentYear") var minDocumentYear = 2024
 
     /// Files the user chose to scan even though their name already matches
     /// the renamed pattern. Survives the refresh that runs before a scan.
@@ -210,6 +224,7 @@ final class AppModel: ObservableObject {
         isRunning = true
         resetCounts()
         alreadyDoneCount = files.filter { $0.status == .alreadyRenamed }.count
+        lastScanRenames = []
 
         let client = GeminiClient(apiKey: apiKey, model: modelID)
         Task {
@@ -243,10 +258,16 @@ final class AppModel: ObservableObject {
             // Previous scheme: rearrange the existing fields locally.
             if let migrated = Self.migratedName(from: name) {
                 let newName = Self.uniqueName(base: migrated, in: folder, currentName: name)
+                guard newName != name else {
+                    alreadyDoneCount += 1
+                    setStatus(id, .alreadyRenamed)
+                    continue
+                }
                 do {
                     let newURL = folder.appendingPathComponent(newName)
                     try fm.moveItem(at: url, to: newURL)
                     renamedCount += 1
+                    lastScanRenames.append(RenameRecord(from: url, to: newURL))
                     if let i = files.firstIndex(where: { $0.id == id }) {
                         files[i].url = newURL
                     }
@@ -291,13 +312,13 @@ final class AppModel: ObservableObject {
                 continue
             }
 
-            // All of this user's bills are from 2024 onward — a year outside
-            // that range means the model misread the (day-first) date, so
-            // flag it instead of renaming wrongly.
+            // A year outside the expected range means the model likely
+            // misread the (day-first) date, so flag it instead of renaming
+            // wrongly. Range floor is configurable in Settings.
             let currentYear = Calendar.current.component(.year, from: Date())
-            if let year = Int(date.prefix(4)), !(2024...(currentYear + 1)).contains(year) {
+            if let year = Int(date.prefix(4)), !(minDocumentYear...(currentYear + 1)).contains(year) {
                 errorCount += 1
-                setStatus(id, .error("Suspicious date \"\(date)\" (expected year 2024–\(currentYear + 1)) — likely a misread date, not renamed"))
+                setStatus(id, .error("Suspicious date \"\(date)\" (expected year \(minDocumentYear)–\(currentYear + 1)) — likely a misread date, not renamed"))
                 continue
             }
 
@@ -313,6 +334,7 @@ final class AppModel: ObservableObject {
                 let newURL = folder.appendingPathComponent(newName)
                 try fm.moveItem(at: url, to: newURL)
                 renamedCount += 1
+                lastScanRenames.append(RenameRecord(from: url, to: newURL))
                 if let i = files.firstIndex(where: { $0.id == id }) {
                     files[i].url = newURL
                 }
@@ -326,6 +348,29 @@ final class AppModel: ObservableObject {
             if index < pendingIDs.count - 1 {
                 try? await Task.sleep(nanoseconds: 500_000_000)
             }
+        }
+    }
+
+    /// Reverts every rename from the most recent scan, most recent first.
+    /// Files that were moved, renamed, or deleted since the scan (by the
+    /// user, in Finder) are skipped and reported rather than failing the
+    /// whole undo.
+    func undoLastScan() {
+        guard !isRunning, !lastScanRenames.isEmpty else { return }
+        let fm = FileManager.default
+        var failures = 0
+        for record in lastScanRenames.reversed() {
+            do {
+                try fm.moveItem(at: record.to, to: record.from)
+            } catch {
+                failures += 1
+            }
+        }
+        let reverted = lastScanRenames.count - failures
+        lastScanRenames = []
+        refreshFileList()
+        if failures > 0 {
+            undoAlertMessage = "Reverted \(reverted) of \(reverted + failures) rename(s). \(failures) file(s) couldn't be restored — they may have been moved, renamed, or deleted since the scan."
         }
     }
 

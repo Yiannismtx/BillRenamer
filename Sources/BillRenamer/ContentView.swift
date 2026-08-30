@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var model: AppModel
     @State private var showHelp = false
+    @State private var confirmingUndo = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,6 +24,28 @@ struct ContentView: View {
             if !model.hasAPIKey {
                 model.showSettings = true
             }
+        }
+        .confirmationDialog(
+            "Undo the last scan?",
+            isPresented: $confirmingUndo
+        ) {
+            Button("Undo \(model.lastScanRenames.count) Rename(s)", role: .destructive) {
+                model.undoLastScan()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Renames the files back to their names from before the last scan.")
+        }
+        .alert(
+            "Undo Incomplete",
+            isPresented: Binding(
+                get: { model.undoAlertMessage != nil },
+                set: { if !$0 { model.undoAlertMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.undoAlertMessage ?? "")
         }
     }
 
@@ -50,6 +73,17 @@ struct ContentView: View {
                 .buttonStyle(.borderless)
                 .disabled(model.isRunning)
                 .help("Refresh file list")
+            }
+
+            if !model.lastScanRenames.isEmpty {
+                Button {
+                    confirmingUndo = true
+                } label: {
+                    Image(systemName: "arrow.uturn.backward.circle")
+                }
+                .buttonStyle(.borderless)
+                .disabled(model.isRunning)
+                .help("Undo the \(model.lastScanRenames.count) rename(s) from the last scan")
             }
 
             if model.isRunning {
