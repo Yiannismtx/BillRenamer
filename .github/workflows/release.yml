@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 1.8.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check inputs
+        run: |
+          VERSION="${{ inputs.version }}"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Version must look like 1.8.0"; exit 1; }
+          if ! grep -q "(\"$VERSION\"" Sources/BillRenamer/WhatsNewSheet.swift; then
+            echo "No What's New entry for $VERSION — add one at the top of ReleaseNotes.entries in Sources/BillRenamer/WhatsNewSheet.swift and push it first."
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Stamp version
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" Resources/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" Resources/Info.plist
+
+      - name: Build app
+        run: ./build.sh
+
+      - name: Zip app
+        run: |
+          mkdir -p releases
+          rm -f "releases/BillRenamer-$VERSION.zip"
+          ditto -c -k --sequesterRsrc --keepParent BillRenamer.app "releases/BillRenamer-$VERSION.zip"
+
+      - name: Sign and regenerate appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          [ -n "$SPARKLE_PRIVATE_KEY" ] || { echo "Missing SPARKLE_PRIVATE_KEY repository secret"; exit 1; }
+          printf '%s' "$SPARKLE_PRIVATE_KEY" | .build/artifacts/sparkle/Sparkle/bin/generate_appcast releases/ \
+            --ed-key-file - \
+            --download-url-prefix "https://raw.githubusercontent.com/${{ github.repository }}/main/releases/"
+
+      - name: Commit and push release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add releases Resources/Info.plist
+          git commit -m "Release $VERSION"
+          git push origin HEAD:main
