@@ -12,6 +12,12 @@ if [[ $# -ne 1 ]]; then
 fi
 VERSION="$1"
 
+if ! grep -q "(\"$VERSION\"" Sources/BillRenamer/WhatsNewSheet.swift; then
+    echo "Error: no What's New entry for $VERSION." >&2
+    echo "Add one at the top of ReleaseNotes.entries in Sources/BillRenamer/WhatsNewSheet.swift, then rerun." >&2
+    exit 1
+fi
+
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" Resources/Info.plist
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" Resources/Info.plist
 

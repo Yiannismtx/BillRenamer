@@ -100,8 +100,24 @@ final class AppModel: ObservableObject {
         files.filter { $0.status == .pending }.count
     }
 
+    @Published var showWhatsNew = false
+
+    static var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+    }
+
     init() {
         hasAPIKey = Keychain.loadAPIKey() != nil
+
+        // Show the What's New sheet once per version — but not on a fresh
+        // install, where the API-key onboarding takes priority.
+        let defaults = UserDefaults.standard
+        let lastSeen = defaults.string(forKey: "lastSeenVersion")
+        if lastSeen != nil, lastSeen != Self.appVersion,
+           !ReleaseNotes.notes(for: Self.appVersion).isEmpty {
+            showWhatsNew = true
+        }
+        defaults.set(Self.appVersion, forKey: "lastSeenVersion")
     }
 
     func chooseFolder() {

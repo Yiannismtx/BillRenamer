@@ -16,6 +16,9 @@ struct ContentView: View {
             SettingsSheet()
                 .environmentObject(model)
         }
+        .sheet(isPresented: $model.showWhatsNew) {
+            WhatsNewSheet(version: AppModel.appVersion)
+        }
         .onAppear {
             if !model.hasAPIKey {
                 model.showSettings = true
