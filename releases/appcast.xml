@@ -3,6 +3,22 @@
     <channel>
         <title>BillRenamer</title>
         <item>
+            <title>2.0.0</title>
+            <pubDate>Sun, 30 Aug 2026 21:28:51 +0000</pubDate>
+            <sparkle:version>2.0.0</sparkle:version>
+            <sparkle:shortVersionString>2.0.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer-2.0.0.zip" length="1213691" type="application/octet-stream" sparkle:edSignature="YQurIVrlpWW064Ic98BW2RKOVdJ/STPB6rgrIMYI3sPISCXOlTk5ON0G/P+D+kCU6uPzA7Im4FY3upbbnDwhDw=="/>
+            <sparkle:deltas>
+                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer2.0.0-1.8.0.delta" sparkle:deltaFrom="1.8.0" length="37830" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="980240" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="RFH25ZxdI/TWOKJ97CzBpaYobil+24ITZQS7giQVs6byZ7hQAFbxbayqnBxF/IGVAK31U/aFq94skh80OrWHBg=="/>
+                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer2.0.0-1.7.0.delta" sparkle:deltaFrom="1.7.0" length="109914" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Xx9PqKcEJowzK/pe19R6H6pdBGmXQ8kv3/eyd40zFdi+lshrkZavcSK6dSQS3dJLw36PfkXagQf050mvDSCrDQ=="/>
+                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer2.0.0-1.6.0.delta" sparkle:deltaFrom="1.6.0" length="114358" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="8kGR37GQBCr87T+IuBZqc59ywgRhrATAy+LVLU7ImOQS56NWdScNx2r7C1XJyUCFrShyKgwvkZbZnFfW1nPNAw=="/>
+                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer2.0.0-1.5.0.delta" sparkle:deltaFrom="1.5.0" length="114798" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="CISZrGT40qlbbt0X1o0FB9S6w5CoPwpsUP/s2cGTttnHiTC64wzQrEyyZm4PlL2SfqRiHGaidk3GuVa0SFEFDA=="/>
+                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer2.0.0-1.4.0.delta" sparkle:deltaFrom="1.4.0" length="116578" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="LH3BAwQpxUWkB2RfxNqI4cyVX/AmQmS89gXFd7yzXo8TuN68IsMr+iVMT0Pw36fvol2m8chUZH1ChuwPvtOiBA=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>1.8.0</title>
             <pubDate>Sun, 30 Aug 2026 20:43:53 +0000</pubDate>
             <sparkle:version>1.8.0</sparkle:version>
@@ -32,22 +48,6 @@
                 <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer1.7.0-1.4.0.delta" sparkle:deltaFrom="1.4.0" length="51010" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="gSyibHEx1j+G1d4Bc+hG+pqEzHZcWA6E5ZWcOgOzZ7GXqLEr1XGNU6oy7WxcWCv9cXi2jW8+6QZEANb1AcVHCQ=="/>
                 <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer1.7.0-1.3.0.delta" sparkle:deltaFrom="1.3.0" length="61230" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Ug2WfUgFMBVpndSDtrA7h1ApzUp+HCVLiKZlWS/v1WwbSlhpc/MGlKTPvzuX3Qe6nY2Fb7Nwk4z7uNKUaXXaDQ=="/>
                 <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer1.7.0-1.2.0.delta" sparkle:deltaFrom="1.2.0" length="68994" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="ZIW+8Oauqg8MkTVN+ETXM7yNLq/UCB2Gp2g8yeEyf9z7ThS5NUpOD+bPqwBWP4RTgy2r+t01L2Gf2NI9RRk+Cg=="/>
-            </sparkle:deltas>
-        </item>
-        <item>
-            <title>1.6.0</title>
-            <pubDate>Sun, 30 Aug 2026 21:19:04 +0300</pubDate>
-            <sparkle:version>1.6.0</sparkle:version>
-            <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer-1.6.0.zip" length="1280655" type="application/octet-stream" sparkle:edSignature="7EM5hU9Yn6fPVYT8JQtZm9HsLLR2jXkyOtJq0rNax6yua95I5Tgv0sMYgYjAKQWAlgqbsVYbbijURdTstpwPAA=="/>
-            <sparkle:deltas>
-                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer1.6.0-1.5.0.delta" sparkle:deltaFrom="1.5.0" length="21194" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="ilIjHxx8BoA7wkMgPl2UPM9G/E8scrbyPwzYFZcu6pqyZuKwflrQNPewv5CSg35zeEB1PEKZzTIE3k4aumPXBQ=="/>
-                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer1.6.0-1.4.0.delta" sparkle:deltaFrom="1.4.0" length="31638" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="AWU35Qq0psyF9p7hLhmZ+KkvqKYGuaQ1tfS81NVTzu6VmC4VHX7FjB/+bgQNBacGI0VhPXsW/K/VKXl0COzpDA=="/>
-                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer1.6.0-1.3.0.delta" sparkle:deltaFrom="1.3.0" length="48426" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="KZGEp6AESxrIjLf7IiwGnebIZzFRIM1jo3iY3W3tz03R3WVisiHKxgACRHUrohLkt0KVcOb+TURPptgFDqRhBw=="/>
-                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer1.6.0-1.2.0.delta" sparkle:deltaFrom="1.2.0" length="55578" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="+hUyM+51lvov0bwkwHU88auz1dmg+o7UePOB+bKGfNKerwCnDMmCkNrql5toPuJfqg/DH+TCGK2XabaVphAOBA=="/>
-                <enclosure url="https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/BillRenamer1.6.0-1.1.0.delta" sparkle:deltaFrom="1.1.0" length="96794" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977616" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="lfzRGSgH43AR/Qv1z8JIcyAD54ArgzMR9/XBXezOYDo+WlbOE8PDK4czO7O9r6yUmquAl6nXPcCtJvdUsMjcAQ=="/>
             </sparkle:deltas>
         </item>
     </channel>
