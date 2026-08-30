@@ -4,6 +4,10 @@ import SwiftUI
 /// first — release.sh refuses to publish a version that has no entry here.
 enum ReleaseNotes {
     static let entries: [(version: String, notes: [String])] = [
+        ("1.8.0", [
+            "Undo Last Scan — revert every rename from the last scan with one click, in case the model got something wrong.",
+            "Configurable earliest year — the \"suspicious date\" check's floor year is now adjustable in Settings, for scanning older archives.",
+        ]),
         ("1.7.0", [
             "New \"What's New\" page — appears once after every update, like this one.",
             "File names now put the issuer before the type: YYYYMMDD_Issuer_TYPE_Number.pdf, e.g. 20260830_Vodafone_INV_55484.pdf.",
