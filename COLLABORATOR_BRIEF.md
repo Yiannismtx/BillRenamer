@@ -8,8 +8,8 @@ nothing breaks for our users.
 
 BillRenamer is a native macOS app (Swift + SwiftUI, macOS 13+, no third-party
 runtime deps besides Sparkle) that renames business/accounting PDFs using
-Google's Gemini API. The user picks a folder; every top-level PDF not already
-named correctly is uploaded to Gemini, which returns issuer, issue date, a
+Anthropic's Claude API. The user picks a folder; every top-level PDF not
+already named correctly is uploaded to Claude, which returns issuer, issue date, a
 document type code, and a document number. The file is renamed in place to:
 
 ```
@@ -31,8 +31,9 @@ rearranged locally for free; anything older is re-scanned through the API.
 - `Sources/BillRenamer/` — all app code:
   - `AppModel.swift` — folder scanning, filename regexes, migrations,
     sanitization, rename loop, per-file statuses.
-  - `GeminiClient.swift` — Gemini REST call (PDF as inline base64), the
-    extraction prompt, error handling with one automatic retry on 403/429/5xx.
+  - `ClaudeClient.swift` — Claude Messages API call (PDF as a base64 document
+    block, structured JSON-schema output, effort "low"), the extraction
+    prompt, error handling with one automatic retry on 429/500/529.
   - `Keychain.swift` — API key storage in the macOS Keychain.
   - `ContentView.swift` / `SettingsSheet.swift` / `WhatsNewSheet.swift` — UI.
   - `Updater.swift` — Sparkle auto-update wiring.
@@ -47,11 +48,12 @@ rearranged locally for free; anything older is re-scanned through the API.
 
 ## External systems
 
-1. **Google Gemini API** (model `gemini-3.1-flash-lite`, changeable in the
-   app's settings). Each user supplies their own free API key from
-   https://aistudio.google.com/apikey — it lives in that user's macOS Keychain,
+1. **Anthropic Claude API** (model `claude-sonnet-5`, changeable in the
+   app's settings). Each user supplies their own API key from
+   https://console.anthropic.com/settings/keys — billed per use, separate from
+   any claude.ai subscription. It lives in that user's macOS Keychain,
    never in the repo or the app bundle. For your own testing, make your own key.
-   Every scanned PDF is uploaded to Google, so never test with documents you
+   Every scanned PDF is uploaded to Anthropic, so never test with documents you
    wouldn't send there.
 2. **GitHub** — source of truth for code AND the update feed. Installed apps
    poll `https://raw.githubusercontent.com/Yiannismtx/BillRenamer/main/releases/appcast.xml`
@@ -109,13 +111,21 @@ with a few known people). New users: download
 `releases/BillRenamer-<latest>.zip` from the repo, unzip, **move the app to
 /Applications** (required — macOS "translocation" breaks self-updating when run
 from Downloads), right-click → Open the first time to pass Gatekeeper, then
-follow the in-app instructions to create and save their Gemini API key.
+follow the in-app instructions to create and save their Anthropic API key.
+
+**The app must live in /Applications.** Running it from the Desktop, Documents,
+or any other iCloud-synced folder breaks auto-updates: iCloud stamps
+`com.apple.FinderInfo` onto Sparkle's nested `Installer.xpc`, invalidating its
+signature, and macOS then refuses to launch it — updates download but never
+install, with no visible error. The `BillRenamer.app` left in the repo by
+`build.sh` is a packaging artifact, not the copy to use.
 
 ## Known gotchas
 
 - Dates on Greek documents are day-first; the prompt handles this and the app
-  rejects extracted years outside 2024–next year as suspected misreads
-  (flagged red, file left untouched) — keep that guard.
+  rejects extracted years outside [earliest expected year .. next year] as
+  suspected misreads (flagged red, file left untouched) — keep that guard. The
+  floor defaults to 2024 and is adjustable in Settings.
 - Underscore is the filename field separator, so `sanitize()` strips
   underscores from issuer/number values. Keep that invariant.
 - The issuer name is cleaned to a short Latin-script brand name (legal suffixes
@@ -123,5 +133,9 @@ follow the in-app instructions to create and save their Gemini API key.
   local `stripLegalSuffixes` safety net.
 - `codesign` fails with "resource fork/detritus" if extended attributes sneak
   into the bundle — `build.sh` runs `xattr -cr` before signing; keep that.
-- The Gemini "Test Key" button treats any HTTP 2xx as success on purpose:
-  thinking models may return no visible text under a tiny token cap.
+- The "Test Key" button treats any HTTP 2xx as success on purpose: thinking
+  models may return no visible text under a tiny token cap.
+- `build.sh` and `release.sh` deep-verify the signature
+  (`codesign --verify --deep --strict`) and clear xattrs first. Plain
+  `codesign -v` is shallow, does not look inside Sparkle.framework, and misses
+  exactly the breakage that silently kills auto-updates. Keep both.
