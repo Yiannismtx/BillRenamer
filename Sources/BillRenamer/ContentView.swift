@@ -18,7 +18,7 @@ struct ContentView: View {
                 .environmentObject(model)
         }
         .sheet(isPresented: $model.showWhatsNew) {
-            WhatsNewSheet(version: AppModel.appVersion)
+            WhatsNewSheet(version: AppModel.appVersion, sinceVersion: model.lastSeenVersion)
         }
         .onAppear {
             if !model.hasAPIKey {

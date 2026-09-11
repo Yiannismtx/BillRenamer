@@ -115,6 +115,9 @@ final class AppModel: ObservableObject {
     }
 
     @Published var showWhatsNew = false
+    /// Version the user last launched, so the What's New sheet can cover every
+    /// release they skipped — not just the one they landed on.
+    private(set) var lastSeenVersion: String?
 
     static var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
@@ -127,8 +130,9 @@ final class AppModel: ObservableObject {
         // install, where the API-key onboarding takes priority.
         let defaults = UserDefaults.standard
         let lastSeen = defaults.string(forKey: "lastSeenVersion")
-        if lastSeen != nil, lastSeen != Self.appVersion,
-           !ReleaseNotes.notes(for: Self.appVersion).isEmpty {
+        lastSeenVersion = lastSeen
+        if let lastSeen, lastSeen != Self.appVersion,
+           !ReleaseNotes.entries(after: lastSeen, upTo: Self.appVersion).isEmpty {
             showWhatsNew = true
         }
         defaults.set(Self.appVersion, forKey: "lastSeenVersion")

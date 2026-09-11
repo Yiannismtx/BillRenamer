@@ -45,6 +45,22 @@ Two ways, both end with every installed copy auto-updating:
 - **Locally (Mac with the Sparkle key in its Keychain):** add the What's New
   entry, then run `./release.sh 1.8.0`.
 
+## Where the app must live (important for auto-updates)
+
+Install `BillRenamer.app` in **`/Applications`**, and never run it from the
+Desktop, Documents, or any other iCloud-synced folder — including this repo's
+own build output.
+
+iCloud's file provider stamps `com.apple.FinderInfo` onto nested bundles it
+syncs. That xattr invalidates the code signature of Sparkle's
+`Installer.xpc` / `Downloader.xpc`, macOS then refuses to launch them, and
+updates download but silently never install (the app appears frozen on an old
+version). Running from `~/Downloads` has the same class of problem via
+Gatekeeper app translocation.
+
+The `BillRenamer.app` that `./build.sh` leaves in the repo is a packaging
+artifact for `release.sh` — not the copy to use day to day.
+
 ## Sharing the app
 
 The API key lives in the local user's macOS Keychain, not in the app bundle.

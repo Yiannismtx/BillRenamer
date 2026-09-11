@@ -22,6 +22,13 @@ xattr -cr "$APP"
 codesign --force --sign - "$APP/Contents/Frameworks/Sparkle.framework"
 xattr -cr "$APP"
 codesign --force --sign - "$APP"
-codesign -v "$APP"
+
+# iCloud/Finder can stamp com.apple.FinderInfo onto nested bundles after
+# signing. That xattr invalidates the signature of Sparkle's XPC services,
+# and macOS then refuses to launch Installer.xpc — updates download but never
+# install. Clear once more, then verify DEEPLY: plain `codesign -v` is shallow
+# and does not look inside the framework, so it misses exactly this failure.
+xattr -cr "$APP"
+codesign --verify --deep --strict "$APP"
 
 echo "Built $APP"

@@ -42,6 +42,16 @@ jobs:
           rm -f "releases/BillRenamer-$VERSION.zip"
           ditto -c -k --sequesterRsrc --keepParent BillRenamer.app "releases/BillRenamer-$VERSION.zip"
 
+      - name: Verify the packaged app
+        run: |
+          # Deep-verify what is actually shipped. A stray com.apple.FinderInfo
+          # xattr invalidates Sparkle's Installer.xpc signature, and macOS then
+          # refuses to launch it — updates download but never install.
+          VERIFY_DIR=$(mktemp -d)
+          ditto -x -k "releases/BillRenamer-$VERSION.zip" "$VERIFY_DIR"
+          codesign --verify --deep --strict "$VERIFY_DIR/BillRenamer.app"
+          rm -rf "$VERIFY_DIR"
+
       - name: Sign and regenerate appcast
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}

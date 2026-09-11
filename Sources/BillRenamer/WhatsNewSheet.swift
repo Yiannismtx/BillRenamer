@@ -4,6 +4,10 @@ import SwiftUI
 /// first — release.sh refuses to publish a version that has no entry here.
 enum ReleaseNotes {
     static let entries: [(version: String, notes: [String])] = [
+        ("2.1.0", [
+            "Fixed: updates could download but never install when BillRenamer was run from an iCloud-synced folder such as the Desktop. Keep the app in your Applications folder — iCloud alters the app's internals in a way that stops macOS from launching Sparkle's installer.",
+            "What's New now shows every release you missed, not just the newest one — so a skipped release that needs action from you can't slip by unread.",
+        ]),
         ("2.0.1", [
             "BillRenamer now has its own app icon.",
         ]),
@@ -25,11 +29,42 @@ enum ReleaseNotes {
     static func notes(for version: String) -> [String] {
         entries.first(where: { $0.version == version })?.notes ?? []
     }
+
+    /// Every release newer than `lastSeen`, up to and including `current`,
+    /// newest first. Someone who skips releases (or catches up after a long
+    /// gap) still sees what changed in between — notably anything that needs
+    /// action from them, like relinking an API key.
+    static func entries(after lastSeen: String, upTo current: String) -> [(version: String, notes: [String])] {
+        entries.filter {
+            isVersion($0.version, newerThan: lastSeen) && !isVersion($0.version, newerThan: current)
+        }
+    }
+
+    /// Numeric component-wise comparison, so "1.10.0" > "1.9.0".
+    static func isVersion(_ a: String, newerThan b: String) -> Bool {
+        let lhs = a.split(separator: ".").map { Int($0) ?? 0 }
+        let rhs = b.split(separator: ".").map { Int($0) ?? 0 }
+        for i in 0..<max(lhs.count, rhs.count) {
+            let l = i < lhs.count ? lhs[i] : 0
+            let r = i < rhs.count ? rhs[i] : 0
+            if l != r { return l > r }
+        }
+        return false
+    }
 }
 
 struct WhatsNewSheet: View {
     @Environment(\.dismiss) private var dismiss
     let version: String
+    let sinceVersion: String?
+
+    private var sections: [(version: String, notes: [String])] {
+        guard let since = sinceVersion else {
+            let notes = ReleaseNotes.notes(for: version)
+            return notes.isEmpty ? [] : [(version, notes)]
+        }
+        return ReleaseNotes.entries(after: since, upTo: version)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -40,16 +75,35 @@ struct WhatsNewSheet: View {
                     .font(.headline)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(ReleaseNotes.notes(for: version), id: \.self) { note in
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("•")
-                        Text(note)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .font(.callout)
-                }
+            if sections.count > 1, let since = sinceVersion {
+                Text("Including everything since \(since).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(sections, id: \.version) { section in
+                        VStack(alignment: .leading, spacing: 8) {
+                            if sections.count > 1 {
+                                Text(section.version)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                            ForEach(section.notes, id: \.self) { note in
+                                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                    Text("•")
+                                    Text(note)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .font(.callout)
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: 320)
 
             HStack {
                 Spacer()

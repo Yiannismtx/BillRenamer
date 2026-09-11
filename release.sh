@@ -28,6 +28,19 @@ ZIP="releases/BillRenamer-$VERSION.zip"
 rm -f "$ZIP"
 ditto -c -k --sequesterRsrc --keepParent BillRenamer.app "$ZIP"
 
+# Verify what is actually being shipped, not just what was built: extract the
+# zip and deep-verify it. A stray com.apple.FinderInfo xattr (iCloud sync,
+# Finder) invalidates Sparkle's Installer.xpc signature, and macOS then
+# refuses to launch it — updates download but never install.
+VERIFY_DIR=$(mktemp -d)
+ditto -x -k "$ZIP" "$VERIFY_DIR"
+if ! codesign --verify --deep --strict "$VERIFY_DIR/BillRenamer.app"; then
+    rm -rf "$VERIFY_DIR"
+    echo "Error: the packaged app fails deep signature verification — not publishing." >&2
+    exit 1
+fi
+rm -rf "$VERIFY_DIR"
+
 # Signs each zip with the EdDSA key from the login keychain and rewrites
 # releases/appcast.xml.
 .build/artifacts/sparkle/Sparkle/bin/generate_appcast releases/ \
